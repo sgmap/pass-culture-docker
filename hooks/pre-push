@@ -1,5 +1,7 @@
 #!/bin/bash
 
+current_repository=$(basename `git rev-parse --show-toplevel`)
+
 protected_branch='production'
 
 policy='[Policy] Never force push or delete the '$protected_branch' branch!'
@@ -40,7 +42,14 @@ elif [[ $push_command =~ $protected_branch ]] && [ $current_branch != $protected
         exit 1
     fi
 # Case: all other cases
-else 
+else
+  # check for multiple alembic heads before push (especially when rebasing before a merge)
+  if [[ $current_repository = 'api' ]] && [ $current_branch != $protected_branch ]; then
+    echo -e "\n\033[0;96mRunning alembic multiple heads check\033[0m\n"
+    if [ ! -z "$(alembic branches)" ]; then
+      echo "Multiple alembic heads found"
+      exit 1
+    fi
+  fi
     exit 0
 fi
-
